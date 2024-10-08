@@ -12,9 +12,9 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Alex Ruddick',
-    author_email='a.ruddick@numat-tech.com',
+    author_email='alex@ruddick.tech',
     license='GPLv3',
-    url='https://github.com/numat/ismatec',
+    url='https://github.com/alexrudd2/ismatec',
     packages=['ismatec'],
     install_requires=[
         'pyserial',
