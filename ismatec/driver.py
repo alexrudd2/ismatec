@@ -1,7 +1,6 @@
 """Ismatec Reglo ICC multi-channel peristaltic pump driver.
 
 Distributed under the GNU General Public License v3
-Copyright (C) 2022 NuMat Technologies
 """
 from __future__ import annotations
 

@@ -1,7 +1,6 @@
 """Transports and helpers for Ismatec Reglo ICC peristaltic pump.
 
 Distributed under the GNU General Public License v3
-Copyright (C) 2022 NuMat Technologies
 """
 from __future__ import annotations
 

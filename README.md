@@ -42,8 +42,8 @@ asyncio.run(get())
 Acknowledgements
 ================
 
-©2022 Alexander Ruddick
-
+©2022-4 Alexander Ruddick
+©2022 Numat Technologies
 [Original project](https://github.com/alexbjorling/lib-maxiv-regloicc) ©2017 Alexander Bjoerling
 
 No affiliation to [the Hein group](https://gitlab.com/heingroup/ismatec). As of 2023, that project appears to have been abandoned.
