@@ -157,7 +157,7 @@ class Pump:
         packed_time = pack_time2(runtime, units='m')
         return self.hw.command(f'{channel}xT{packed_time}')
 
-    async def get_volume_setpoint(self, channel:int ) -> float:
+    async def get_volume_setpoint(self, channel: int) -> float:
         """Get the volume setpoint (mL) of a channel."""
         return float(self.hw.query(f'{channel}v')) / 1000
 

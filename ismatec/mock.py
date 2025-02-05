@@ -18,7 +18,7 @@ class AsyncClientMock(MagicMock):
 
 
 class Pump(RealPump):
-    """Mocks the overhead stirrer driver for offline testing."""
+    """Mocks the pump for offline testing."""
 
     def __init__(self, *args, **kwargs):
         """Set up connection parameters with default port."""
