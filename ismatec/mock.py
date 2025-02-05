@@ -25,7 +25,7 @@ class Pump(RealPump):
         """Set up connection parameters with default port."""
         self.client = AsyncClientMock()
         self.channels = [1, 2, 3, 4]
-        self.running = {channel: False for channel in self.channels}
+        self.running = dict.fromkeys(self.channels, False)
         self.state = {
             'channel_addressing': False,  # FIXME verify
             'event_messaging': False,  # FIXME verify
