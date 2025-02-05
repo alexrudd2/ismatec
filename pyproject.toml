@@ -87,3 +87,4 @@ check_untyped_defs = true
 [tool.pytest.ini_options]
 addopts = "--cov=ismatec"
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
