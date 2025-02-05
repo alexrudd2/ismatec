@@ -293,9 +293,7 @@ def pack_discrete2(number) -> str:
     10. The value is right-justified. Unused digits to the left are
     zeros.
     """
-    s = str(number).strip('0')
-    whole, decimals = s.split('.')
-    return '%04d' % int(whole + decimals)
+    return str(number).zfill(4)
 
 
 def pack_discrete3(number) -> str:

@@ -132,9 +132,9 @@ class Pump:
         response = self.hw.query(f'{channel}+')
         return float(response[:-3])
 
-    async def set_tubing_inner_diameter(self, channel: int, diam):
+    async def set_tubing_inner_diameter(self, channel: int, diam: float):
         """Set the peristaltic tubing inner diameter (mm) of a channel."""
-        return self.hw.command(f'{channel}+{pack_discrete2(diam)}')
+        return self.hw.command(f'{channel}+{pack_discrete2(diam*100)}')
 
     async def get_speed(self, channel) -> float:
         """Get the speed (RPM) of a channel."""
