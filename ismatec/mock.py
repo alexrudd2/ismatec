@@ -1,7 +1,6 @@
 """Driver mock classes for offline testing.
 
 Distributed under the GNU General Public License v3
-Copyright (C) 2022 NuMat Technologies
 """
 
 from unittest.mock import MagicMock
@@ -110,7 +109,7 @@ class Communicator(MagicMock):
         elif (self.state['channels'][channel - 1]['mode'].startswith('VOL_')
               and self.state['channels'][channel - 1]['volume'] >= 1256):
             return 'V 8308E+3'  # flowrate > max
-        return ValueError
+        raise ValueError
 
     def command(self, command):  # noqa: C901
         """Mock commands."""

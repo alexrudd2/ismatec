@@ -31,7 +31,7 @@ class Pump:
     independently. See `self.channels` for available channels.
     """
 
-    def __init__(self, address=None, debug=False, **kwargs) -> None:
+    def __init__(self, address, debug=False, **kwargs) -> None:
         if debug:
             logger.setLevel(logging.DEBUG)
         """Initialize the Communicator and setup the pump to accept commands."""
@@ -136,7 +136,7 @@ class Pump:
         """Set the peristaltic tubing inner diameter (mm) of a channel."""
         return self.hw.command(f'{channel}+{pack_discrete2(diam * 100)}')
 
-    async def get_speed(self, channel) -> float:
+    async def get_speed(self, channel: int) -> float:
         """Get the speed (RPM) of a channel."""
         return float(self.hw.query(f'{channel}S'))
 
@@ -157,11 +157,11 @@ class Pump:
         packed_time = pack_time2(runtime, units='m')
         return self.hw.command(f'{channel}xT{packed_time}')
 
-    async def get_volume_setpoint(self, channel) -> float:
+    async def get_volume_setpoint(self, channel:int ) -> float:
         """Get the volume setpoint (mL) of a channel."""
         return float(self.hw.query(f'{channel}v')) / 1000
 
-    async def set_volume_setpoint(self, channel, vol: float) -> bool:
+    async def set_volume_setpoint(self, channel: int, vol: float) -> bool:
         """Set the volume (mL) of a channel."""
         assert channel in self.channels
         return self.hw.command(f'{channel}v{pack_volume2(vol)}')
@@ -242,7 +242,7 @@ class Pump:
         # start
         self.hw.command(f'{channel}H')
 
-    async def dispense_vol_at_rate(self, channel: int, vol, rate, units='ml/min'):
+    async def dispense_vol_at_rate(self, channel: int | None, vol, rate, units='ml/min'):
         """Dispense vol (ml) at rate on specified channel.
 
         Rate is specified by units, either 'ml/min' or 'rpm'.

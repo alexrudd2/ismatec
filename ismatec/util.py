@@ -109,12 +109,12 @@ class Communicator(threading.Thread):
         pass
 
     @abstractmethod
-    def read(self, length):
+    def read(self, length) -> str:
         """Read a fixed number of bytes from the device."""
         pass
 
     @abstractmethod
-    def readline(self):
+    def readline(self) -> str:
         """Read until a LF terminator."""
         pass
 
