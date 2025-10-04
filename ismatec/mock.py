@@ -28,7 +28,7 @@ class Pump(RealPump):
         self.state = {
             'channel_addressing': False,  # FIXME verify
             'event_messaging': False,  # FIXME verify
-            'channels': []
+            'channels': [],
         }
         self.state['channels'] = [
             {
