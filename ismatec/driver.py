@@ -222,7 +222,7 @@ class Pump:
         """Reset all user configurable data to default values."""
         return bool(self.hw.command('10'))  # '1' is a pump address, not channel
 
-    async def continuous_flow(self, channel: int, rate: float):
+    async def continuous_flow(self, channel: int, rate: float) -> None:
         """Start continuous flow (mL/min) on specified channel."""
         assert channel in self.channels
         maxrate = float(self.hw.query(f'{channel}?').split(' ')[0])
@@ -242,7 +242,7 @@ class Pump:
         # start
         self.hw.command(f'{channel}H')
 
-    async def dispense_vol_at_rate(self, channel: int | None, vol, rate, units='ml/min'):
+    async def dispense_vol_at_rate(self, channel: int | None, vol: float, rate: float, units='ml/min') -> None:
         """Dispense vol (ml) at rate on specified channel.
 
         Rate is specified by units, either 'ml/min' or 'rpm'.
@@ -286,7 +286,7 @@ class Pump:
         # start
         self.hw.command(f'{channel}H')
 
-    async def dispense_vol_over_time(self, channel: int, vol, time):
+    async def dispense_vol_over_time(self, channel: int, vol, time) -> None:
         """Dispense vol (ml) over time (min) on specified channel."""
         assert channel in self.channels
         # volume over time mode

@@ -178,18 +178,18 @@ class SocketCommunicator(Communicator):
         self.socket.connect((address, int(port)))
         self.timeout = timeout
 
-    def write(self, message: str):
+    def write(self, message: str) -> None:
         """Write a message to the device."""
         self.socket.send(message.encode() + b'\r')
 
-    def read(self, length: int):
-        """Read a fixed number of bytes from the device."""
+    def read(self, length: int) -> str:
+        """Read a fixed number of bytes from the device, decoding them."""
         ready = select.select([self.socket], [], [], self.timeout)
         if ready[0]:
             return self.socket.recv(length).decode()
         return ''
 
-    def readline(self):
+    def readline(self) -> str:
         """Read until a LF terminator."""
         msg = ''
         t0 = time.time()
@@ -202,7 +202,7 @@ class SocketCommunicator(Communicator):
                 break
         return msg
 
-    def close(self):
+    def close(self) -> None:
         """Release resources."""
         self.socket.shutdown(socket.SHUT_RDWR)
         self.socket.close()
@@ -248,7 +248,7 @@ def pack_time1(number, units='s') -> str:
     return str(min(number, 35964000)).replace('.', '')
 
 
-def pack_time2(number, units='s') -> str:
+def pack_time2(number: float, units='s') -> str:
     """Convert number to Ismatec Reglo ICC 'time type 2'.
 
     8 digits, left padded, 0 to 35964000 in units of 0.1s (0 to 999 hr)
@@ -262,7 +262,7 @@ def pack_time2(number, units='s') -> str:
     return str(min(number, 35964000)).replace('.', '').zfill(8)
 
 
-def pack_volume1(number) -> str:
+def pack_volume1(number: float) -> str:
     """Convert number to Ismatec Reglo ICC 'volume type 1'.
 
     mmmmEse — Represents the scientific notation of m.mmm x 10se.
@@ -273,7 +273,7 @@ def pack_volume1(number) -> str:
     return f'{s[0]}{s[2:5]}E{s[-3]}{s[-1]}'
 
 
-def pack_volume2(number):
+def pack_volume2(number: float) -> str:
     """Convert number to Ismatec Reglo ICC 'volume type 2'.
 
     This is undocumented. It appears to be 'volume type 1' without
@@ -286,7 +286,7 @@ def pack_volume2(number):
     return f'{s[0]}{s[2:5]}{s[-3]}{s[-1]}'
 
 
-def pack_discrete2(number) -> str:
+def pack_discrete2(number: float) -> str:
     """Convert number to Ismatec Reglo ICC 'discrete type 2'.
 
     Four characters representing a discrete integer value in base
@@ -296,7 +296,7 @@ def pack_discrete2(number) -> str:
     return str(number).zfill(4)
 
 
-def pack_discrete3(number) -> str:
+def pack_discrete3(number: float) -> str:
     """Convert number to Ismatec Reglo ICC 'discrete type 3'.
 
     Six characters in base 10. The value is right-justified.
