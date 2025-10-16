@@ -28,8 +28,8 @@ classifiers = [
 dependencies = [
     "pyserial",
 ]
-[project.optional-dependencies]
-test = [
+[dependency-groups]
+dev = [
   "mypy==1.18.*",
   "pytest>=8,<9",
   "pytest-cov",
