@@ -29,9 +29,9 @@ dependencies = [
 ]
 [dependency-groups]
 dev = [
-  "pytest>=8,<9",
+  "pytest>=9,<10",
   "pytest-cov",
-  "pytest-asyncio==1.3.0",
+  "pytest-asyncio",
   "pytest-xdist>=3,<4",
   "ruff==0.14.*",
   "types-pyserial",
@@ -85,8 +85,8 @@ convention = "pep257"
 [tool.mypy]
 check_untyped_defs = true
 
-[tool.pytest.ini_options]
-addopts = "--cov=ismatec"
+[tool.pytest]
+addopts = ["--cov"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 
