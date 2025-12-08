@@ -48,7 +48,7 @@ class Pump(RealPump):
         self.hw.running = self.running
         self.hw.state = self.state
 
-    async def __aenter__(self, *args):
+    async def __aenter__(self):
         """Set up connection."""
         return self
 
