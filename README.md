@@ -1,7 +1,7 @@
 ismatec
 =======
 
-Python ≥3.8 driver and command-line tool for Masterflex® Ismatec® Reglo ICC Digital Pumps.
+Python driver and command-line tool for Masterflex® Ismatec® Reglo ICC Digital Pumps.
 
 ![](https://us.vwr.com/stibo/bigweb/std.lang.all/21/78/38732178.jpg)
 
@@ -26,7 +26,7 @@ This will print the current flow rate for the selected channel, using either the
 
 ## Python
 
-This uses Python ≥3.5's async/await syntax to asynchronously communicate with a Ismatec® Reglo ICC pump. For example:
+This uses Python async/await syntax to asynchronously communicate with a Ismatec® Reglo ICC pump. For example:
 
 ```python
 import asyncio
