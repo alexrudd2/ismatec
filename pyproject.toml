@@ -93,3 +93,4 @@ asyncio_default_fixture_loop_scope = "session"
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
+reportImplicitOverride = false

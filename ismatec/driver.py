@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 
 from .util import (
+    ChannelID,
     Communicator,
     Mode,
     Rotation,
@@ -46,7 +47,7 @@ class Pump:
         self.hw.start()
         self.running: dict[int, bool] = {}
         # Enable independent channel addressing
-        self.hw.command('1~1')
+        _ = self.hw.command('1~1')
         # Get channel indices for request validation
         self.channels = self.get_channels()
         # Set initial running states to False (they will 'hopefully' be updated by a async message)
@@ -60,7 +61,7 @@ class Pump:
         """Provide exit to the context manager."""
         self.hw._stop_event.set()
 
-    def _set_running_status(self, status, channel) -> None:
+    def _set_running_status(self, status: bool, channel: ChannelID | list[ChannelID]) -> None:
         """Manually set running status."""
         if isinstance(channel, list):
             logger.debug(f'manually setting running status {status} on channels {channel}')
@@ -83,19 +84,19 @@ class Pump:
         """Return serial protocol version."""
         return int(self.hw.query('1x!'))
 
-    async def set_flow_rate(self, channel: int, flowrate):
+    async def set_flow_rate(self, channel: ChannelID, flowrate: float):
         """Set the flow rate of the specified channel."""
         assert channel in self.channels
         flow = pack_volume2(flowrate)
-        self.hw.command(f'{channel}f{flow}')
+        _ = self.hw.command(f'{channel}f{flow}')
 
-    async def get_flow_rate(self, channel: int) -> float:
+    async def get_flow_rate(self, channel: ChannelID) -> float:
         """Get the flow rate of the specified channel."""
         assert channel in self.channels
         reply = self.hw.query(f'{channel}f')
         return float(reply) / 1000 if reply else 0
 
-    async def is_running(self, channel: int) -> bool:
+    async def is_running(self, channel: ChannelID) -> bool:
         """Return if the specified channel is running (probably).
 
         Note there is no way to directly query a single channel.
@@ -110,12 +111,12 @@ class Pump:
         reply = self.hw.query(f'{channel}xM')
         return Mode(reply).name
 
-    async def set_mode(self, channel: int, mode: Mode):
+    async def set_mode(self, channel: ChannelID, mode: Mode):
         """Set the mode of the specified channel."""
         assert channel in self.channels
         return self.hw.command(f'{channel}{mode.value}')
 
-    def get_channels(self) -> list:
+    def get_channels(self) -> list[ChannelID]:
         """Get a list of available channel options.
 
         Return [] if the pump is not configured for independent channels.
@@ -126,74 +127,75 @@ class Pump:
         except ValueError:
             return []
 
-    async def get_tubing_inner_diameter(self, channel: int) -> float:
+    async def get_tubing_inner_diameter(self, channel: ChannelID) -> float:
         """Get the peristaltic tubing inner diameter (mm) of a channel."""
         assert channel in self.channels
         response = self.hw.query(f'{channel}+')
         return float(response[:-3])
 
-    async def set_tubing_inner_diameter(self, channel: int, diam: float):
+    async def set_tubing_inner_diameter(self, channel: ChannelID, diam: float):
         """Set the peristaltic tubing inner diameter (mm) of a channel."""
         return self.hw.command(f'{channel}+{pack_discrete2(diam * 100)}')
 
-    async def get_speed(self, channel: int) -> float:
+    async def get_speed(self, channel: ChannelID) -> float:
         """Get the speed (RPM) of a channel."""
+        assert channel in self.channels
         return float(self.hw.query(f'{channel}S'))
 
-    async def set_speed(self, channel: int, rpm: float) -> bool:
+    async def set_speed(self, channel: ChannelID, rpm: float) -> bool:
         """Set the speed (RPM) of a channel."""
         assert channel in self.channels
         rpm = int(round(rpm * 100, 2))
         return self.hw.command(f'{channel}S{pack_discrete3(rpm)}')
 
-    async def get_runtime(self, channel: int) -> float:
+    async def get_runtime(self, channel: ChannelID) -> float:
         """Get the runtime (minutes) of a channel."""
         assert channel in self.channels
         return float(self.hw.query(f'{channel}xT')) / 10 / 60
 
-    async def set_runtime(self, channel: int, runtime: float) -> bool:
+    async def set_runtime(self, channel: ChannelID, runtime: float) -> bool:
         """Set the runtime (minutes) of a channel."""
         assert channel in self.channels
         packed_time = pack_time2(runtime, units='m')
         return self.hw.command(f'{channel}xT{packed_time}')
 
-    async def get_volume_setpoint(self, channel: int) -> float:
+    async def get_volume_setpoint(self, channel: ChannelID) -> float:
         """Get the volume setpoint (mL) of a channel."""
         return float(self.hw.query(f'{channel}v')) / 1000
 
-    async def set_volume_setpoint(self, channel: int, vol: float) -> bool:
+    async def set_volume_setpoint(self, channel: ChannelID, vol: float) -> bool:
         """Set the volume (mL) of a channel."""
         assert channel in self.channels
         return self.hw.command(f'{channel}v{pack_volume2(vol)}')
 
-    async def get_rotation(self, channel: int) -> Rotation:
+    async def get_rotation(self, channel: ChannelID) -> Rotation:
         """Return the rotation direction on the specified channel."""
         assert channel in self.channels
         rotation_code = self.hw.query(f'{channel}xD')
         return Rotation(rotation_code)
 
-    async def set_rotation(self, channel: int, rotation: Rotation):
+    async def set_rotation(self, channel: ChannelID, rotation: Rotation):
         """Set the rotation direction on the specified channel."""
         return self.hw.command(f'{channel}{rotation.value}')
 
-    async def get_setpoint_type(self, channel: int) -> Setpoint:
+    async def get_setpoint_type(self, channel: ChannelID) -> Setpoint:
         """Return the setpoint type (RPM or flowrate) on the specified channel."""
         assert channel in self.channels
         type_code = self.hw.query(f'{channel}xf')
         return Setpoint(type_code)
 
-    async def set_setpoint_type(self, channel: int, type: Setpoint):
+    async def set_setpoint_type(self, channel: ChannelID, type: Setpoint):
         """Set the setpoint type (RPM or flow rate) on the specified channel."""
         return self.hw.command(f'{channel}xf{type.value}')
 
-    async def get_max_flow_rate(self, channel: int, calibrated=False):
+    async def get_max_flow_rate(self, channel: ChannelID, calibrated: bool = False):
         """Get the max flow rate (mL/min) achievable with current settings."""
         if calibrated:
             return self.hw.query(f'{channel}!')
         else:
             return self.hw.query(f'{channel}?')
 
-    async def get_run_failure_reason(self, channel: int) -> tuple:
+    async def get_run_failure_reason(self, channel: ChannelID) -> tuple[str, float]:
         """Get reason for failure to run."""
         result = self.hw.query(f'{channel}xe')
         exponent = float(result[-2:].strip('+'))
@@ -204,35 +206,33 @@ class Pump:
         """Return status of channel addressing."""
         return self.hw.query('1~') == '1'
 
-    async def set_channel_addressing(self, on) -> bool:
+    async def set_channel_addressing(self, on: bool) -> bool:
         """Enable or disable channel addressing."""
-        on = 1 if on else 0
-        return bool(self.hw.command(f'1~{on}'))
+        return bool(self.hw.command(f'1~{1 if on else 0}'))
 
     async def has_event_messaging(self) -> bool:
         """Return status of event messaging."""
         return self.hw.query('1xE') == '1'
 
-    async def set_event_messaging(self, on) -> bool:
+    async def set_event_messaging(self, on: bool) -> bool:
         """Enable or disable event messaging."""
-        on = 1 if on else 0
-        return bool(self.hw.command(f'1xE{on}'))
+        return bool(self.hw.command(f'1xE{1 if on else 0}'))
 
     async def reset_default_settings(self) -> bool:
         """Reset all user configurable data to default values."""
         return bool(self.hw.command('10'))  # '1' is a pump address, not channel
 
-    async def continuous_flow(self, channel: int, rate: float) -> None:
+    async def continuous_flow(self, channel: ChannelID, rate: float) -> None:
         """Start continuous flow (mL/min) on specified channel."""
         assert channel in self.channels
         maxrate = float(self.hw.query(f'{channel}?').split(' ')[0])
         # flow rate mode
-        self.hw.command(f'{channel}M')
+        _ = self.hw.command(f'{channel}M')
         # set flow direction.  K=clockwise, J=counterclockwise
-        if rate < 0:
-            self.hw.command(f'{channel}K')
+        if rate < 0:  # noqa: SIM108
+            _ = self.hw.command(f'{channel}K')
         else:
-            self.hw.command(f'{channel}J')
+            _ = self.hw.command(f'{channel}J')
         # set flow rate
         if abs(rate) > maxrate:
             rate = rate / abs(rate) * maxrate
@@ -242,7 +242,8 @@ class Pump:
         # start
         self.hw.command(f'{channel}H')
 
-    async def dispense_vol_at_rate(self, channel: int | None, vol: float, rate: float, units='ml/min') -> None:
+    async def dispense_vol_at_rate(self, channel: ChannelID | None, vol: float, rate: float,
+                                   units: str = 'ml/min') -> None:
         """Dispense vol (ml) at rate on specified channel.
 
         Rate is specified by units, either 'ml/min' or 'rpm'.
@@ -253,7 +254,7 @@ class Pump:
         elif channel is None:
             # this enables fairly synchronous start
             channel = 0
-            maxrates = []
+            maxrates: list[float] = []
             for ch in self.channels:
                 maxrates.append(float(self.hw.query(f'{ch}?').split(' ')[0]))
             maxrate = min(maxrates)
@@ -261,22 +262,22 @@ class Pump:
             maxrate = float(self.hw.query(f'{channel}?').split(' ')[0])
         assert channel in self.channels or channel == 0
         # volume at rate mode
-        self.hw.command(f'{channel}O')
+        _ = self.hw.command(f'{channel}O')
         # make volume positive
         if vol < 0:
             vol *= -1
             rate *= -1
         # set flow direction
-        if rate < 0:
-            self.hw.command(f'{channel}K')
+        if rate < 0:  # noqa: SIM108
+            _ = self.hw.command(f'{channel}K')
         else:
-            self.hw.command(f'{channel}J')
+            _ = self.hw.command(f'{channel}J')
         # set flow rate
         if abs(rate) > maxrate:
             rate = rate / abs(rate) * maxrate
         self.hw.query(f'{channel}f{pack_volume2(rate)}')
         if units == 'rpm':
-            self.hw.command(f'{channel}S{pack_discrete3(rate * 100)}')
+            _ = self.hw.command(f'{channel}S{pack_discrete3(rate * 100)}')
         else:
             self.hw.query(f'{channel}f{pack_volume2(rate)}')
         # set volume
@@ -284,19 +285,19 @@ class Pump:
         # make sure the running status gets set from the start to avoid later Sardana troubles
         self._set_running_status(True, channel)
         # start
-        self.hw.command(f'{channel}H')
+        _ = self.hw.command(f'{channel}H')
 
-    async def dispense_vol_over_time(self, channel: int, vol, time) -> None:
+    async def dispense_vol_over_time(self, channel: ChannelID, vol, time) -> None:
         """Dispense vol (ml) over time (min) on specified channel."""
         assert channel in self.channels
         # volume over time mode
-        self.hw.command(f'{channel}G')
+        _ = self.hw.command(f'{channel}G')
         # set flow direction
         if vol < 0:
-            self.hw.command(f'{channel}K')
+            _ = self.hw.command(f'{channel}K')
             vol *= -1
         else:
-            self.hw.command(f'{channel}J')
+            _ =self.hw.command(f'{channel}J')
         # set volume
         self.hw.query(f'{channel}v{pack_volume2(vol)}')
         # set time.  Note: if the time is too short, the pump will not start.
@@ -304,21 +305,21 @@ class Pump:
         # make sure the running status gets set from the start to avoid later Sardana troubles
         self._set_running_status(True, channel)
         # start
-        self.hw.command(f'{channel}H')
+        _ = self.hw.command(f'{channel}H')
 
-    async def dispense_flow_over_time(self, channel: int, rate, time, units='ml/min'):
+    async def dispense_flow_over_time(self, channel: ChannelID, rate, time, units='ml/min'):
         """Dispense at a set flowrate over time (min) on specified channel."""
         assert channel in self.channels
         # set flow direction
         if rate < 0:
-            self.hw.command(f'{channel}K')
+            _ = self.hw.command(f'{channel}K')
             rate *= -1
         else:
-            self.hw.command(f'{channel}J')
+            _ =self.hw.command(f'{channel}J')
         # set to flowrate mode first, otherwise Time mode uses RPMs
         self.hw.query(f'{channel}M')
         # Set to flowrate over time ("Time") mode
-        self.hw.command(f'{channel}N')
+        _ = self.hw.command(f'{channel}N')
         # set flowrate
         self.hw.query(f'{channel}f{pack_volume2(rate)}')
         # set time.  Note: if the time is too short, the pump will not start.
@@ -326,9 +327,9 @@ class Pump:
         # make sure the running status gets set from the start
         self._set_running_status(True, channel)
         # start
-        self.hw.command(f'{channel}H')
+        _ = self.hw.command(f'{channel}H')
 
-    async def start(self, channel: int):
+    async def start(self, channel: ChannelID):
         """Start any pumping operation on specified channel."""
         assert channel in self.channels
         # doing this misses the asynchronous start signal, so set manually
@@ -336,7 +337,7 @@ class Pump:
         self._set_running_status(result, channel)
         return result
 
-    async def stop(self, channel: int):
+    async def stop(self, channel: ChannelID):
         """Stop any pumping operation on specified channel."""
         # here we can stop all channels by specifying 0
         assert channel in self.channels

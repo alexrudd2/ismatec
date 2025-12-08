@@ -5,6 +5,7 @@ Distributed under the GNU General Public License v3
 
 from unittest.mock import MagicMock
 
+from ismatec.driver import ChannelID
 from ismatec.driver import Pump as RealPump
 from ismatec.util import Mode, Rotation, Setpoint, Tubing, pack_time1, pack_volume1
 
@@ -20,10 +21,10 @@ class AsyncClientMock(MagicMock):
 class Pump(RealPump):
     """Mocks the pump for offline testing."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):  # pyright: ignore[reportMissingSuperCall]
         """Set up connection parameters with default port."""
         self.client = AsyncClientMock()
-        self.channels = [1, 2, 3, 4]
+        self.channels: list[ChannelID] = [1, 2, 3, 4]
         self.running = dict.fromkeys(self.channels, False)
         self.state = {
             'channel_addressing': False,  # FIXME verify
@@ -52,7 +53,7 @@ class Pump(RealPump):
         """Set up connection."""
         return self
 
-    async def __aexit__(self, *args):
+    async def __aexit__(self, *args) -> None:
         """Close connection."""
         pass
 
@@ -60,7 +61,7 @@ class Pump(RealPump):
 class Communicator(MagicMock):
     """Mock the pump communication hardware."""
 
-    def query(self, command) -> str:  # noqa: C901
+    def query(self, command: str) -> str:  # noqa: C901
         """Mock replies to queries."""
         if command == '1~':  # channel addressing
             return '1' if self.state['channel_addressing'] else '0'
@@ -98,7 +99,7 @@ class Communicator(MagicMock):
         else:
             raise NotImplementedError
 
-    def _get_cannot_run_response(self, channel):
+    def _get_cannot_run_response(self, channel: ChannelID):
         """Return the responses for when the pump failed to run."""
         if (self.state['channels'][channel - 1]['mode'] == Mode.VOL_PAUSE.name
            and self.state['channels'][channel - 1]['cycles'] == 0):
@@ -111,7 +112,7 @@ class Communicator(MagicMock):
             return 'V 8308E+3'  # flowrate > max
         raise ValueError
 
-    def command(self, command):  # noqa: C901
+    def command(self, command: str):  # noqa: C901
         """Mock commands."""
         if command == '10':  # reset all settings
             for channel, _ in enumerate(self.channels):
@@ -161,7 +162,7 @@ class Communicator(MagicMock):
             raise NotImplementedError
         return True
 
-    def _check_pump_will_run(self, channel):
+    def _check_pump_will_run(self, channel: ChannelID) -> bool:
         """Return if the pump will run with the current settings."""
         return not ((self.state['channels'][channel - 1]['mode'] == Mode.VOL_PAUSE.name
                     and self.state['channels'][channel - 1]['cycles'] == 0)

@@ -9,16 +9,20 @@ import select
 import socket
 import threading
 import time
-from abc import abstractmethod
+from abc import ABC, abstractmethod
+from collections.abc import Callable
 from enum import Enum
 from queue import Queue
+from typing import TYPE_CHECKING, Literal
 
 import serial
 
 logger = logging.getLogger('ismatec')
+ChannelID = int
+if TYPE_CHECKING:
+    RunningCallback = Callable[[bool, ChannelID], None] | None
 
-
-class Communicator(threading.Thread):
+class Communicator(ABC, threading.Thread):
     """Interface to the Ismatec Reglo ICC peristaltic pump.
 
     It handles the communication via direct serial or through a serial
@@ -29,27 +33,27 @@ class Communicator(threading.Thread):
     serial communication. TODO explore async serial development.
     """
 
-    def __init__(self, running_callback):
+    def __init__(self, running_callback: RunningCallback):
         """Initialize the communications link and create queues for commands and responses."""
         super().__init__()
         self._stop_event = threading.Event()
 
         # internal request and response queues
-        self.req_q: Queue = Queue()
-        self.res_q: Queue = Queue()
+        self.req_q: Queue[str] = Queue()
+        self.res_q: Queue[str] = Queue()
 
         # dictionary of channel running status
         self.running: dict[int, bool] = {}
-        self.running_callback = running_callback
+        self.running_callback: RunningCallback = running_callback
         self.address = None
 
-    def run(self):
+    def run(self) -> None:
         """Run continuously until threading.Event fires."""
         while not self._stop_event.is_set():
             self.loop()
         self.close()
 
-    def command(self, cmd) -> bool:
+    def command(self, cmd: str) -> bool:
         """Place a command in the request queue and return the response."""
         logger.debug(f"writing command '{cmd}' to {self.address}")
         self.req_q.put(cmd)
@@ -60,7 +64,7 @@ class Communicator(threading.Thread):
             logger.debug(f'WARNING: command {cmd} returned {result}')
             return False
 
-    def query(self, cmd) -> str:
+    def query(self, cmd: str) -> str:
         """Place a query in the request queue and return the response."""
         logger.debug(f"writing query '{cmd}' to {self.address}")
         self.req_q.put(cmd)
@@ -74,7 +78,7 @@ class Communicator(threading.Thread):
         if self.req_q.qsize():
             # disable asynchronous communication
             self.write('1xE0')
-            self.read(1)
+            _ = self.read(1)
             # empty the ingoing buffer
             flush = self.read(100)
             if flush:
@@ -86,7 +90,7 @@ class Communicator(threading.Thread):
             self.res_q.put(res)
             # enable asynchronous communication again
             self.write('1xE1')
-            self.read(1)
+            _ =self.read(1)
         line = self.readline()
         if line:
             # check for running message
@@ -104,13 +108,13 @@ class Communicator(threading.Thread):
                     logger.info('Received pump stopped message')
 
     @abstractmethod
-    def write(self, message):
+    def write(self, message: str):
         """Write a message to the device."""
         pass
 
     @abstractmethod
-    def read(self, length) -> str:
-        """Read a fixed number of bytes from the device."""
+    def read(self, length: int) -> str:
+        """Read a fixed number of decoded bytes from the device."""
         pass
 
     @abstractmethod
@@ -119,11 +123,11 @@ class Communicator(threading.Thread):
         pass
 
     @abstractmethod
-    def close(self):
+    def close(self) -> None:
         """Close the connection."""
         pass
 
-    def join(self, timeout=None):
+    def join(self, timeout: float | None = None):
         """Stop the thread."""
         logger.debug('joining communications thread...')
         self._stop_event.set()
@@ -134,32 +138,28 @@ class Communicator(threading.Thread):
 class SerialCommunicator(Communicator):
     """Communicator using a directly-connected RS232 serial device."""
 
-    def __init__(self, address=None, baudrate=9600, timeout=.15, bytesize=serial.EIGHTBITS,
-                 stopbits=serial.STOPBITS_ONE, parity=serial.PARITY_NONE, running_callback=None):
+    def __init__(self, address: str, baudrate=9600, timeout=.15, bytesize=serial.EIGHTBITS,
+                 stopbits=serial.STOPBITS_ONE, parity=serial.PARITY_NONE, running_callback:RunningCallback = None):
         """Initialize serial port."""
         super().__init__(running_callback)
-        self.address = address
-        self.serial_details = {'baudrate': baudrate,
-                               'bytesize': bytesize,
-                               'stopbits': stopbits,
-                               'parity': parity,
-                               'timeout': timeout}
         assert isinstance(self.address, str)
-        self.ser = serial.Serial(self.address, **self.serial_details)
+        self.address = address
+        self.ser = serial.Serial(self.address,
+            baudrate=baudrate, bytesize=bytesize, stopbits=stopbits, parity=parity, timeout=timeout)
 
-    def read(self, length: int):
-        """Read a fixed number of bytes from the device."""
+    def read(self, length: int) -> str:
+        """Read a fixed number of decoded bytes from the device."""
         return self.ser.read(length).decode()
 
-    def readline(self):
+    def readline(self) -> str:
         """Read until a LF terminator."""
         return self.ser.readline().strip().decode()
 
     def write(self, message: str):
         """Write a message to the device."""
-        self.ser.write(message.encode() + b'\r')
+        _ = self.ser.write(message.encode() + b'\r')
 
-    def close(self):
+    def close(self) -> None:
         """Release resources."""
         self.ser.close()
 
@@ -167,7 +167,7 @@ class SerialCommunicator(Communicator):
 class SocketCommunicator(Communicator):
     """Communicator using a TCP/IP<=>serial gateway."""
 
-    def __init__(self, address, running_callback, timeout=0.1):
+    def __init__(self, address: str, running_callback: RunningCallback, timeout: float = 0.1):
         """Initialize socket."""
         super().__init__(running_callback)
         try:
@@ -180,7 +180,7 @@ class SocketCommunicator(Communicator):
 
     def write(self, message: str) -> None:
         """Write a message to the device."""
-        self.socket.send(message.encode() + b'\r')
+        _ = self.socket.send(message.encode() + b'\r')
 
     def read(self, length: int) -> str:
         """Read a fixed number of bytes from the device, decoding them."""
@@ -234,7 +234,7 @@ class Rotation(Enum):
     COUNTERCLOCKWISE = 'K'
 
 
-def pack_time1(number, units='s') -> str:
+def pack_time1(number: float, units: Literal['s', 'm', 'h'] = 's') -> str:
     """Convert number to Ismatec Reglo ICC 'time type 1'.
 
     1-8 digits, 0 to 35964000 in units of 0.1s (0 to 999 hr)
@@ -248,7 +248,7 @@ def pack_time1(number, units='s') -> str:
     return str(min(number, 35964000)).replace('.', '')
 
 
-def pack_time2(number: float, units='s') -> str:
+def pack_time2(number: float, units: Literal['s', 'm', 'h'] = 's') -> str:
     """Convert number to Ismatec Reglo ICC 'time type 2'.
 
     8 digits, left padded, 0 to 35964000 in units of 0.1s (0 to 999 hr)
