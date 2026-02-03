@@ -33,7 +33,7 @@ dev = [
   "pytest-cov",
   "pytest-asyncio",
   "pytest-xdist>=3,<4",
-  "ruff==0.14.*",
+  "ruff==0.15.*",
   "types-pyserial",
   "zuban>=0.1.1",
 ]
