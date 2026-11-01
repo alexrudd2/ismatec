@@ -45,7 +45,7 @@ class Communicator(ABC, threading.Thread):
         # dictionary of channel running status
         self.running: dict[int, bool] = {}
         self.running_callback: RunningCallback = running_callback
-        self.address = None
+        self.address: str
 
     def run(self) -> None:
         """Run continuously until threading.Event fires."""

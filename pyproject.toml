@@ -36,7 +36,7 @@ dev = [
   "pytest-xdist>=3,<4",
   "ruff==0.16.*",
   "types-pyserial",
-  "zuban>=0.1.1",
+  "zuban==0.10.2",
 ]
 
 [project.scripts]
@@ -83,8 +83,9 @@ select = [
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
 
-[tool.mypy]
+[tool.zuban]
 check_untyped_defs = true
+mode = "mypy"
 
 [tool.pytest]
 addopts = ["--cov"]
